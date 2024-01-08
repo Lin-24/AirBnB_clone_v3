@@ -9,8 +9,9 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 app.register_blueprint(app_views)
+app.url_map.strict_slashes = False
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-CORS(app, resources={r"/*": {"origins": "0.0.0.0"}})
+CORS(app, resources={r'/api/v1/*': {'origins': '0.0.0.0'}})
 
 
 @app.teardown_appcontext
@@ -22,7 +23,8 @@ def teardown(error):
 @app.errorhandler(404)
 def not_found(error):
     """404 error"""
-    return jsonify({'error': 'Not found'}), 404
+    response = {'error': 'Not found'}
+    return jsonify(response), 404
 
 if __name__ == '__main__':
     app.run(host=getenv('HBNB_API_HOST'),

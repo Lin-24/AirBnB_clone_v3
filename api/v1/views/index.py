@@ -6,15 +6,16 @@ from flask import jsonify
 from models import storage
 
 
-@app_views.route('/status', strict_slashes=False)
-def status():
+@app_views.route('/status', methods=['GET'])
+def api_status():
     """Return status of application"""
 
-    return jsonify({'status': 'OK'})
+    response = {'status': 'OK'}
+    return jsonify(response)
 
 
-@app_views.route('/stats', strict_slashes=False)
-def stats():
+@app_views.route('/stats', methods=['GET'])
+def get_stats():
     """Retrieve count of objects in storage"""
     from models.amenity import Amenity
     from models.city import City
