@@ -58,7 +58,7 @@ class FileStorage:
         except:
             pass
 
-   def get(self, cls, id):
+    def get(self, cls, id):
         """Retrieves an object by class and/or id
         """
         key = cls.__name__ + '.' + id
