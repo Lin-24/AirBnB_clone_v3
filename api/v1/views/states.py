@@ -1,82 +1,52 @@
 #!/usr/bin/python3
-"""View to handle API actions related to State objects
 """
-
+    This is the states page handler for Flask.
+"""
 from api.v1.views import app_views
-from flask import jsonify, abort, request
 from models import storage
+from flask import abort, jsonify, request
+
+from models.state import State
 
 
-@app_views.route('/states', methods=['GET', 'POST'], strict_slashes=False)
-@app_views.route('/states/<state_id>', methods=['GET', 'DELETE', 'PUT'],
-                 strict_slashes=False)
-def states_get(state_id=None):
-    """Manipulate State object by state_id, or all objects if
-    state_id is None
+@app_views.route('/states', methods=['GET', 'POST'])
+def states():
     """
-    from models.state import State
-    states = storage.all(State)
+        Flask route at /states.
+    """
+    if request.method == 'POST':
+        kwargs = request.get_json()
+        if not kwargs:
+            return {"error": "Not a JSON"}, 400
+        if "name" not in kwargs:
+            return {"error": "Missing name"}, 400
+        new_state = State(**kwargs)
+        new_state.save()
+        return new_state.to_dict(), 201
 
-    # GET REQUESTS
-    if request.method == 'GET':
-        if not state_id:  # if no, state id specified, return all
-            return jsonify([obj.to_dict() for obj in states.values()])
+    elif request.method == 'GET':
+        return jsonify([o.to_dict() for o in storage.all("State").values()])
 
-        key = 'State.' + state_id
-        try:  # if obj exists in dictionary, convert from obj -> dict -> json
-            return jsonify(states[key].to_dict())
-        except KeyError:
-            abort(404)  # if State of state_id does not exist
 
-    # DELETE REQUESTS
-    elif request.method == 'DELETE':
-        try:
-            key = 'State.' + state_id
-            storage.delete(states[key])
+@app_views.route('/states/<id>', methods=['GET', 'DELETE', 'PUT'])
+def states_id(id):
+    """
+        Flask route at /states/<id>.
+    """
+    state = storage.get(State, id)
+    if (state):
+        if request.method == 'DELETE':
+            state.delete()
             storage.save()
-            return jsonify({}), 200
-        except:
-            abort(404)
+            return {}, 200
 
-    # POST REQUESTS
-    elif request.method == 'POST':
-        # convert JSON request to dict
-        if request.is_json:
-            body_request = request.get_json()
-        else:
-            abort(400, 'Not a JSON')
-
-        # instantiate, store, and return new State object
-        if 'name' in body_request:
-            new_state = State(**body_request)
-            storage.new(new_state)
-            storage.save()
-            return jsonify(new_state.to_dict()), 201
-        else:  # if request does not contain required attribute
-            abort(400, 'Missing name')
-
-    # PUT REQUESTS
-    elif request.method == 'PUT':
-        key = 'State.' + state_id
-        try:
-            state = states[key]
-
-            # convert JSON request to dict
-            if request.is_json:
-                body_request = request.get_json()
-            else:
-                abort(400, 'Not a JSON')
-
-            for key, val in body_request.items():
-                if key != 'id' and key != 'created_at' and key != 'updated_at':
-                    setattr(state, key, val)
-
-            storage.save()
-            return jsonify(state.to_dict()), 200
-
-        except KeyError:
-            abort(404)
-
-    # UNSUPPORTED REQUESTS
-    else:
-        abort(501)
+        elif request.method == 'PUT':
+            kwargs = request.get_json()
+            if not kwargs:
+                return {"error": "Not a JSON"}, 400
+            for k, v in kwargs.items():
+                if k not in ["id", "created_at", "updated_at"]:
+                    setattr(state, k, v)
+            state.save()
+        return state.to_dict()
+    abort(404)
