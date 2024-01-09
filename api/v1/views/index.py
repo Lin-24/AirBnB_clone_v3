@@ -1,52 +1,30 @@
-#!/usr/bin/python3
+#!/usr/bin/python3i
+"""Creates a route `/status` on the object app_views
 """
-    This is the amenities page handler for Flask.
-"""
+
 from api.v1.views import app_views
+from flask import jsonify
 from models import storage
-from flask import abort, jsonify, request
-
-from models.amenity import Amenity
 
 
-@app_views.route('/amenities', methods=['GET', 'POST'])
-def amenities():
+@app_views.route('/status', methods=['GET'])
+def api_status():
+    """Returns a JSON response of API status
     """
-        Flask route at /amenities.
+    response = {'status': 'OK'}
+    return jsonify(response)
+
+
+@app_views.route('/stats', methods=['GET'])
+def get_stats():
+    """Retrieves the number of each objects by type
     """
-    if request.method == 'POST':
-        kwargs = request.get_json()
-        if not kwargs:
-            return {"error": "Not a JSON"}, 400
-        if "name" not in kwargs:
-            return {"error": "Missing name"}, 400
-        new_amnt = Amenity(**kwargs)
-        new_amnt.save()
-        return new_amnt.to_dict(), 201
-
-    elif request.method == 'GET':
-        return jsonify([a.to_dict() for a in storage.all("Amenity").values()])
-
-
-@app_views.route('/amenities/<id>', methods=['GET', 'DELETE', 'PUT'])
-def amenities_id(id):
-    """
-        Flask route at /amenities/<id>.
-    """
-    amnt = storage.get(Amenity, id)
-    if (amnt):
-        if request.method == 'DELETE':
-            amnt.delete()
-            storage.save()
-            return {}, 200
-
-        elif request.method == 'PUT':
-            kwargs = request.get_json()
-            if not kwargs:
-                return {"error": "Not a JSON"}, 400
-            for k, v in kwargs.items():
-                if k not in ["id", "created_at", "updated_at"]:
-                    setattr(amnt, k, v)
-            amnt.save()
-        return amnt.to_dict()
-    abort(404)
+    stats = {
+        'amenities': storage.count('Amenity'),
+        'cities': storage.count('City'),
+        'places': storage.count('Place'),
+        'reviews': storage.count('Review'),
+        'states': storage.count('State'),
+        'users': storage.count('User')
+    }
+    return jsonify(stats)
